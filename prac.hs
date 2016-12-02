@@ -1,19 +1,18 @@
 type Ident = String
 data NExpr a = Var Ident
-	     | Const a 
-	     | Plus (NExpr a) (NExpr a) 
-	     | Minus (NExpr a) (NExpr a) 
-	     | Times (NExpr a) (NExpr a)
-	      deriving(Read)
+	   | Const a 
+	   | Plus (NExpr a) (NExpr a) 
+	   | Minus (NExpr a) (NExpr a) 
+	   | Times (NExpr a) (NExpr a)
+	    deriving(Read)
 	     
 data BExpr a = AND (BExpr a) (BExpr a)
-	     | OR (BExpr a) (BExpr a)
-	     | NOT (BExpr a) 
-	     | Gt (NExpr a) (NExpr a) 
-	     | Eq (NExpr a) (NExpr a)
-	      deriving(Read)
+	   | OR (BExpr a) (BExpr a)
+	   | NOT (BExpr a) 
+	   | Gt (NExpr a) (NExpr a) 
+	   | Eq (NExpr a) (NExpr a)
+	    deriving(Read)
 
-	     
 data Command a = Assign Ident (NExpr a)
 	       | Input Ident
 	       | Print (NExpr a)
@@ -24,7 +23,19 @@ data Command a = Assign Ident (NExpr a)
 	       | Seq [Command a]
 	       | Cond (BExpr a) (Command a) (Command a)
 	       | Loop (BExpr a) (Command a)
-	         deriving(Read, Show)
+	        deriving(Read)
+
+indenta ::  Show a => Int -> Command a -> String
+indenta x (Assign s expr) = (espais x) ++ s ++ " := " ++ (show expr)
+indenta x (Input s) = (espais x) ++ "INPUT " ++ s ++ "\n"
+indenta x (Print expr) = (espais x) ++ "PRINT " ++ (show expr)
+indenta x (Empty s) = (espais x) ++ "EMPTY " ++ s ++ "\n"
+indenta x (Push s expr) = (espais x) ++ "PUSH " ++ s ++ " " ++ (show expr)
+indenta x (Pop s) = (espais x) ++ "POP " ++ s ++ "\n"
+indenta x (Size s) = (espais x) ++ "SIZE " ++ s ++ "\n"
+indenta x (Seq l) = (espais x) ++ (foldr (\com acc -> (indenta x com) ++ acc) "" l)
+indenta x (Cond expr coma comb) = (espais x) ++ "IF " ++ (show expr) ++ " THEN\n" ++ (indenta (x+2) coma) ++ (espais x) ++ "ELSE\n" ++ (indenta (x+2) comb) ++ (espais x) ++ "END\n"
+indenta x (Loop expr com) = (espais x) ++ "WHILE " ++ (show expr) ++ "\n" ++ (espais x) ++ "DO\n" ++ (indenta (x+2) com) ++ (espais x) ++ "END\n"
 
 instance Show a => Show(NExpr a) where
     show (Var x) = x
@@ -39,9 +50,12 @@ instance Show a => Show(BExpr a) where
     show (NOT x) = "NOT " ++ (show x)
     show (Gt x y) = (show x) ++ " > " ++ (show y)
     show (Eq x y) = (show x) ++ " = " ++ (show y)
-    
+
+espais :: Int -> String
+espais x
+	| x <= 0 = ""
+	| otherwise = " " ++ (espais (x-1))
+
 
 instance Show a => Show(Command a) where
-    show = indenta 0 
-    where 
-      indenta x (Assign s expr) = "  "++ s ++ " := " ++ (show expr)
+    show = indenta 0
