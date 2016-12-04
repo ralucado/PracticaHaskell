@@ -26,14 +26,14 @@ data Command a = Assign Ident (NExpr a)
 	        deriving(Read)
 
 indenta ::  Show a => Int -> Command a -> String
-indenta x (Assign s expr) = (espais x) ++ s ++ " := " ++ (show expr)
+indenta x (Assign s expr) = (espais x) ++ s ++ " := " ++ (show expr) ++ "\n"
 indenta x (Input s) = (espais x) ++ "INPUT " ++ s ++ "\n"
-indenta x (Print expr) = (espais x) ++ "PRINT " ++ (show expr)
+indenta x (Print expr) = (espais x) ++ "PRINT " ++ (show expr) ++ "\n"
 indenta x (Empty s) = (espais x) ++ "EMPTY " ++ s ++ "\n"
-indenta x (Push s expr) = (espais x) ++ "PUSH " ++ s ++ " " ++ (show expr)
+indenta x (Push s expr) = (espais x) ++ "PUSH " ++ s ++ " " ++ (show expr) ++ "\n"
 indenta x (Pop s) = (espais x) ++ "POP " ++ s ++ "\n"
 indenta x (Size s) = (espais x) ++ "SIZE " ++ s ++ "\n"
-indenta x (Seq l) = (espais x) ++ (foldr (\com acc -> (indenta x com) ++ acc) "" l)
+indenta x (Seq l) = (foldr (\com acc -> (indenta x com) ++ acc) "" l)
 indenta x (Cond expr coma comb) = (espais x) ++ "IF " ++ (show expr) ++ " THEN\n" ++ (indenta (x+2) coma) ++ (espais x) ++ "ELSE\n" ++ (indenta (x+2) comb) ++ (espais x) ++ "END\n"
 indenta x (Loop expr com) = (espais x) ++ "WHILE " ++ (show expr) ++ "\n" ++ (espais x) ++ "DO\n" ++ (indenta (x+2) com) ++ (espais x) ++ "END\n"
 

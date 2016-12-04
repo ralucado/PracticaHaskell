@@ -33,14 +33,18 @@ AST *root;
 
 // function to fill token information
 void zzcr_attr(Attrib *attr, int type, char *text) {
-/*  if (type == ID) {
-    attr->kind = "id";
+  if (type == ID) {
+    attr->kind = "ID";
     attr->text = text;
   }
-  else {*/
+  else if (type == NUM){
+    attr->kind = "NUM";
+    attr->text = text;
+  }
+  else {
     attr->kind = text;
     attr->text = "";
-//  }
+  }
 }
 
 // function to create a new AST node
@@ -71,37 +75,101 @@ for (int i=0; c!=NULL && i<n; i++) c=c->right;
 return c;
 }
 
+void printCond(AST *a){
+  if(a->kind == "NOT"){
+    cout << " NOT (" ;
+    printCond(child(a,0));
+    cout << ")";
+  }
+  else if(a->kind == "NUM" || a->kind == "ID"){
+    if(a->kind == "NUM") cout << " Const " << atoi(a->text.c_str());
+    else cout << " Var \"" << a->text << "\"";
+  }
+  else{  
+    if (a->kind == ">") cout << " Gt";
+    else if(a->kind == "=") cout << " Eq";
+    else if(a->kind == "+") cout << " Plus";
+    else if(a->kind == "-") cout << " Minus";
+    else if(a->kind == "*") cout << " Times";
+    else cout << " " << a->kind;
+    if(child(a,0)!=NULL){
+      cout << " (";
+      printCond(child(a,0));
+      cout << " )";
+    }
+    else if(child(a,1) != NULL){
+      cout << " (";
+      printCond(child(a,1));
+      cout << " )";
+    }
+  }
+}
 
 
 /// print AST, recursively, with indentation
-void ASTPrintIndent(AST *a,string s)
-{
+void ASTPrintIndent(AST *a,string s){
+  
   if (a==NULL) return;
+  string token = a->kind;
+  if (token == "IF"){
+    cout << s << "Cond (";
+    printCond(child(a,0));
+    ASTPrintIndent(child(a,1),"  ");
+    cout << " )" << endl;
+  }
+  else if(token == "INPUT"){
+        cout << s << "Input \"" << child(a,0)->text << "\"" << endl;
+  }
+  else if( token == "PRINT"){
+    cout << s << "Print \"" << child(a,0)->text << "\"" << endl;
+  }
+  else if (token == "WHILE"){
+    cout << s << "Loop";
+    cout << " (";
+    printCond(child(a,0));
+    cout << " ) (";
+    ASTPrintIndent(child(a,1),s+"  ");
+    cout << " )" << endl;
+  }
+  else if (token == "list"){
+    cout << s << "Seq [";
+    int aux = 0;
+    AST *i = child(a,aux);
+    while(i != NULL){
+      ASTPrintIndent(i,s+"  ");
+      cout << " , ";
+      ++aux;
+      i = child(a,aux);
+    }
+    cout << " ]";
+  }
 
-  cout<<a->kind;
-  if (a->text!="") cout<<"("<<a->text<<")";
-  cout<<endl;
+  // cout<<a->kind;
+  // if (a->text!="") cout<<"("<<a->text<<")";
+  // cout<<endl;
 
   AST *i = a->down;
   while (i!=NULL && i->right!=NULL) {
-    cout<<s+"  \\__";
-    ASTPrintIndent(i,s+"  |"+string(i->kind.size()+i->text.size(),' '));
+    //cout<<s+"  \\__";
+    ASTPrintIndent(i,s+"");
     i=i->right;
   }
 
   if (i!=NULL) {
-      cout<<s+"  \\__";
-      ASTPrintIndent(i,s+"   "+string(i->kind.size()+i->text.size(),' '));
-      i=i->right;
+      //cout<<s+"  \\__";
+      ASTPrintIndent(i,s+"");
+      //i=i->right;
   }
 }
+
+    //atoi(a->kind.c_str());
 
 /// print AST
 void ASTPrint(AST *a)
 {
   while (a!=NULL) {
-    cout<<" ";
-    ASTPrintIndent(a,"");
+    //cout<<"  ";
+    ASTPrintIndent(a,string(2,' '));
     a=a->right;
   }
 }
@@ -220,8 +288,7 @@ def: assign | input;
 print: PRINT^ ID;
 input: INPUT^ ID;
 assign: ID ASS^ nexpr;
-cond: IF^ bexpr THEN! seq (cond2 | ) END!;
-cond2: ELSE^ seq;
+cond: IF^ bexpr THEN! seq ELSE! seq END!;
 loop: WHILE^ bexpr DO! seq END!;
 bexpr: bexpr2 ((AND^|OR^) bexpr2)*;
 bexpr2: bexpr3 | NOT^ bexpr3;
@@ -231,6 +298,6 @@ term1: term2 ((PLUS^|MINUS^) term2)*;
 term2: ID | NUM;
 stackop: empty | push | pop | size;
 push: PUSH ID term2;
-pop: POP ID ID;
-empty: EMPTY ID;
-size: SIZE ID ID;
+pop: POP^ ID ID;
+empty: EMPTY^ ID;
+size: SIZE^ ID ID;

@@ -1,0 +1,1 @@
+/home/raluca/Desktop/LP/Lego/compcasa.sh

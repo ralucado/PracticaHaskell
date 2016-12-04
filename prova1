@@ -1,0 +1,16 @@
+  Seq [    Input "X"
+ ,     Input "Y"
+ ,     Cond ( OR ( OR ( Gt ( Var "X" ) ) )  Seq [ ,     Loop ( Gt ( Var "X" ) ) (      Seq [ ,  ,  ] )
+    Seq [ ,  ,  ] ,  ]  Loop ( Gt ( Var "X" ) ) (    Seq [ ,  ,  ] )
+  Seq [ ,  ,  ] )
+    Seq [ ,       Loop ( Gt ( Var "X" ) ) (        Seq [ ,  ,  ] )
+      Seq [ ,  ,  ] ,  ]    Loop ( Gt ( Var "X" ) ) (      Seq [ ,  ,  ] )
+    Seq [ ,  ,  ]    Seq [ ,  ] ,     Print "Z"
+ ,  ]  Input "X"
+  Input "Y"
+  Cond ( OR ( OR ( Gt ( Var "X" ) ) )  Seq [ ,     Loop ( Gt ( Var "X" ) ) (      Seq [ ,  ,  ] )
+    Seq [ ,  ,  ] ,  ]  Loop ( Gt ( Var "X" ) ) (    Seq [ ,  ,  ] )
+  Seq [ ,  ,  ] )
+  Seq [ ,     Loop ( Gt ( Var "X" ) ) (      Seq [ ,  ,  ] )
+    Seq [ ,  ,  ] ,  ]  Loop ( Gt ( Var "X" ) ) (    Seq [ ,  ,  ] )
+  Seq [ ,  ,  ]  Seq [ ,  ]  Print "Z"
