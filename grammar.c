@@ -111,7 +111,7 @@ void printCond(AST *a){
   if(a->kind == "NOT"){
     cout << " NOT (" ;
     printCond(child(a,0));
-    cout << ")";
+    cout << " )";
   }
   else if(a->kind == "NUM" || a->kind == "ID"){
     if(a->kind == "NUM") cout << " Const " << atoi(a->text.c_str());
@@ -124,52 +124,56 @@ void printCond(AST *a){
     else if(a->kind == "-") cout << " Minus";
     else if(a->kind == "*") cout << " Times";
     else cout << " " << a->kind;
-    if(child(a,0)!=NULL){
-      cout << " (";
-      printCond(child(a,0));
-      cout << " )";
-    }
-    else if(child(a,1) != NULL){
-      cout << " (";
-      printCond(child(a,1));
-      cout << " )";
-    }
+    cout << " (";
+    printCond(child(a,0));
+    cout << " )";
+    cout << " (";
+    printCond(child(a,1));
+    cout << " )";
   }
 }
 
 
 /// print AST, recursively, with indentation
-void ASTPrintIndent(AST *a,string s){
+void ASTPrintIndent(AST *a){
   
   if (a==NULL) return;
   string token = a->kind;
   if (token == "IF"){
-    cout << s << "Cond (";
+    cout << "Cond (";
     printCond(child(a,0));
-    ASTPrintIndent(child(a,1),"  ");
-    cout << " )" << endl;
+    cout << " ) (";
+    ASTPrintIndent(child(a,1));
+    cout << " ) (";
+    ASTPrintIndent(child(a,2));
+    cout << " )" ;
   }
   else if(token == "INPUT"){
-    cout << s << "Input \"" << child(a,0)->text << "\"" << endl;
+    cout << "Input \"" << child(a,0)->text << "\"";
   }
   else if( token == "PRINT"){
-    cout << s << "Print \"" << child(a,0)->text << "\"" << endl;
+    cout << "Print \"" << child(a,0)->text << "\"";
   }
   else if (token == "WHILE"){
-    cout << s << "Loop";
+    cout << "Loop";
     cout << " (";
     printCond(child(a,0));
     cout << " ) (";
-    ASTPrintIndent(child(a,1),s+"  ");
-    cout << " )" << endl;
+    ASTPrintIndent(child(a,1));
+    cout << " )" ;
   }
   else if (token == "list"){
-    cout << s << "Seq [";
+    cout << "Seq [";
     int aux = 0;
     AST *i = child(a,aux);
+    if (i != NULL){
+      ASTPrintIndent(i);
+      ++aux;
+      i = child(a,aux);
+    }    
     while(i != NULL){
-      ASTPrintIndent(i,s+"  ");
       cout << " , ";
+      ASTPrintIndent(i);
       ++aux;
       i = child(a,aux);
     }
@@ -183,13 +187,13 @@ void ASTPrintIndent(AST *a,string s){
   AST *i = a->down;
   while (i!=NULL && i->right!=NULL) {
     //cout<<s+"  \\__";
-    ASTPrintIndent(i,s+"");
+    ASTPrintIndent(i);
     i=i->right;
   }
   
   if (i!=NULL) {
     //cout<<s+"  \\__";
-    ASTPrintIndent(i,s+"");
+    ASTPrintIndent(i);
     //i=i->right;
   }
 }
@@ -201,7 +205,7 @@ void ASTPrint(AST *a)
 {
   while (a!=NULL) {
     //cout<<"  ";
-    ASTPrintIndent(a,string(2,' '));
+    ASTPrintIndent(a);
     a=a->right;
   }
 }

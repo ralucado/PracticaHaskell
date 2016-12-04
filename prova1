@@ -1,16 +1,1 @@
-  Seq [    Input "X"
- ,     Input "Y"
- ,     Cond ( OR ( OR ( Gt ( Var "X" ) ) )  Seq [ ,     Loop ( Gt ( Var "X" ) ) (      Seq [ ,  ,  ] )
-    Seq [ ,  ,  ] ,  ]  Loop ( Gt ( Var "X" ) ) (    Seq [ ,  ,  ] )
-  Seq [ ,  ,  ] )
-    Seq [ ,       Loop ( Gt ( Var "X" ) ) (        Seq [ ,  ,  ] )
-      Seq [ ,  ,  ] ,  ]    Loop ( Gt ( Var "X" ) ) (      Seq [ ,  ,  ] )
-    Seq [ ,  ,  ]    Seq [ ,  ] ,     Print "Z"
- ,  ]  Input "X"
-  Input "Y"
-  Cond ( OR ( OR ( Gt ( Var "X" ) ) )  Seq [ ,     Loop ( Gt ( Var "X" ) ) (      Seq [ ,  ,  ] )
-    Seq [ ,  ,  ] ,  ]  Loop ( Gt ( Var "X" ) ) (    Seq [ ,  ,  ] )
-  Seq [ ,  ,  ] )
-  Seq [ ,     Loop ( Gt ( Var "X" ) ) (      Seq [ ,  ,  ] )
-    Seq [ ,  ,  ] ,  ]  Loop ( Gt ( Var "X" ) ) (    Seq [ ,  ,  ] )
-  Seq [ ,  ,  ]  Seq [ ,  ]  Print "Z"
+Seq [Input "X" , Input "Y" , Cond ( OR ( OR ( Gt ( Var "X" ) ( Const 0 ) ) ( Eq ( Var "X" ) ( Const 0 ) ) ) ( NOT ( Gt ( Const 0 ) ( Var "Y" ) ) ) ) (Seq [ , Loop ( Gt ( Var "X" ) ( Var "Y" ) ) (Seq [ ,  ] )Seq [ ,  ] ]Loop ( Gt ( Var "X" ) ( Var "Y" ) ) (Seq [ ,  ] )Seq [ ,  ] ) (Seq [ ] )Seq [ , Loop ( Gt ( Var "X" ) ( Var "Y" ) ) (Seq [ ,  ] )Seq [ ,  ] ]Loop ( Gt ( Var "X" ) ( Var "Y" ) ) (Seq [ ,  ] )Seq [ ,  ]Seq [ ] , Print "Z" ]Input "X"Input "Y"Cond ( OR ( OR ( Gt ( Var "X" ) ( Const 0 ) ) ( Eq ( Var "X" ) ( Const 0 ) ) ) ( NOT ( Gt ( Const 0 ) ( Var "Y" ) ) ) ) (Seq [ , Loop ( Gt ( Var "X" ) ( Var "Y" ) ) (Seq [ ,  ] )Seq [ ,  ] ]Loop ( Gt ( Var "X" ) ( Var "Y" ) ) (Seq [ ,  ] )Seq [ ,  ] ) (Seq [ ] )Seq [ , Loop ( Gt ( Var "X" ) ( Var "Y" ) ) (Seq [ ,  ] )Seq [ ,  ] ]Loop ( Gt ( Var "X" ) ( Var "Y" ) ) (Seq [ ,  ] )Seq [ ,  ]Seq [ ]Print "Z"
