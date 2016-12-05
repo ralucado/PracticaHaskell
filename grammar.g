@@ -108,7 +108,7 @@ void ASTPrintIndent(AST *a){
   if (a==NULL) return;
   string token = a->kind;
   if (token == "IF"){
-    cout << "Cond (";
+    cout << " Cond (";
     printCond(child(a,0));
     cout << " ) (";
     ASTPrintIndent(child(a,1));
@@ -117,21 +117,45 @@ void ASTPrintIndent(AST *a){
     cout << " )" ;
   }
   else if(token == "INPUT"){
-        cout << "Input \"" << child(a,0)->text << "\"";
+        cout << " Input \"" << child(a,0)->text << "\"";
   }
   else if( token == "PRINT"){
-    cout << "Print \"" << child(a,0)->text << "\"";
+    cout << " Print (Var \"" << child(a,0)->text << "\" )";
   }
   else if (token == "WHILE"){
-    cout << "Loop";
+    cout << " Loop";
     cout << " (";
     printCond(child(a,0));
     cout << " ) (";
     ASTPrintIndent(child(a,1));
     cout << " )" ;
   }
+  else if(token == ":="){
+    cout << " Assign \"" << child(a,0)->text << "\" (";
+    printCond(child(a,1));
+    cout << " )"; 
+  }
+
+  else if(token == "PUSH"){
+    cout << " Push \"" << child(a,0)->text << "\" (";
+    printCond(child(a,1));
+    cout << " )"; 
+  }
+
+  else if(token == "POP"){
+    cout << " Pop \"" << child(a,0)->text << "\" \"" << child(a,1)->text << "\"";
+  }
+
+  else if (token == "SIZE"){
+    cout << " Size \"" << child(a,0)->text << "\" \"" << child(a,1)->text << "\"";
+  }
+
+  else if (token == "EMPTY"){
+     cout << " Empty \"" << child(a,0)->text << "\"";
+  }
+
   else if (token == "list"){
-    cout << "Seq [";
+    cout << " Seq [";
     int aux = 0;
     AST *i = child(a,aux);
     if (i != NULL){
@@ -151,7 +175,7 @@ void ASTPrintIndent(AST *a){
   // cout<<a->kind;
   // if (a->text!="") cout<<"("<<a->text<<")";
   // cout<<endl;
-
+/*
   AST *i = a->down;
   while (i!=NULL && i->right!=NULL) {
     //cout<<s+"  \\__";
@@ -163,7 +187,7 @@ void ASTPrintIndent(AST *a){
       //cout<<s+"  \\__";
       ASTPrintIndent(i);
       //i=i->right;
-  }
+  }*/
 }
 
     //atoi(a->kind.c_str());
@@ -289,6 +313,7 @@ int main() {
 seq: (command)* <<#0=createASTlist(_sibling);>>;
 command: def | cond | loop | stackop | print;
 def: assign | input;
+stackop: empty | push | pop | size;
 print: PRINT^ ID;
 input: INPUT^ ID;
 assign: ID ASS^ nexpr;
@@ -300,8 +325,7 @@ bexpr3: nexpr (EQ^|GTHAN^) nexpr;
 nexpr: term1 (TIMES^ term1)*;
 term1: term2 ((PLUS^|MINUS^) term2)*;
 term2: ID | NUM;
-stackop: empty | push | pop | size;
-push: PUSH ID term2;
+push: PUSH^ ID term2;
 pop: POP^ ID ID;
 empty: EMPTY^ ID;
 size: SIZE^ ID ID;
