@@ -1,3 +1,5 @@
+import Data.Maybe
+import Data.Either
 type Ident = String
 data NExpr a = Var Ident
 	   | Const a 
@@ -24,6 +26,84 @@ data Command a = Assign Ident (NExpr a)
 	       | Cond (BExpr a) (Command a) (Command a)
 	       | Loop (BExpr a) (Command a)
 	        deriving(Read)
+
+data SymTable a = Variable Ident a (SymTable a) (SymTable a)
+				| Pila Ident [a] (SymTable a) (SymTable a)
+				| TaulaBuida
+
+class Evaluable e where
+	eval :: (Num a, Ord a) => (Ident -> Maybe a) -> (e a) -> (Either String a)
+	typeCheck :: (Ident -> String) -> (e a) -> Bool
+
+getValue :: SymTable a -> Ident -> (Maybe a)
+getValue TaulaBuida k = Nothing
+getValue (Variable s x left right) k 
+  | k < s = getValue left k
+  | k > s = getValue right k
+  | otherwise = (Just x)
+getValue (Pila s l left right) k
+  | k < s = getValue left k
+  | k > s = getValue right k
+  | otherwise = (Just (head l))
+
+getType :: SymTable a -> Ident -> String
+getType TaulaBuida k = ""
+getType (Variable s x left right) k
+  | k < s = getType left k
+  | k > s = getType right k
+  | otherwise = "Variable"
+getType (Pila s l left right) k
+  | k < s = getType left k
+  | k > s = getType right k
+  | otherwise = "Pila"
+
+instance Evaluable NExpr where
+	eval f (Const x) = Right x
+	eval f (Var x)
+	  | f x == Nothing = Left "error"
+	  | otherwise = Right (fromJust(f x))
+	eval f (Plus expA expB)= case (eval f expA, eval f expB) of
+		(Left a, Left b) -> Left $ a ++ ", " ++ b
+		(_, Left b) -> Left b
+		(Left a, _) -> Left a
+		(Right a, Right b) -> Right $ a + b
+	eval f (Minus expA expB)= case (eval f expA, eval f expB) of
+		(Left a, Left b) -> Left $ a ++ ", " ++ b
+		(_, Left b) -> Left b
+		(Left a, _) -> Left a
+		(Right a, Right b) -> Right $ a - b
+	eval f (Times expA expB)= case (eval f expA, eval f expB) of
+		(Left a, Left b) -> Left $ a ++ ", " ++ b
+		(_, Left b) -> Left b
+		(Left a, _) -> Left a
+		(Right a, Right b) -> Right $ a * b
+
+instance Evaluable BExpr where
+	eval f (Gt expA expB) = case (eval f expA, eval f expB) of
+		(Left a, Left b) -> Left $ a ++ ", " ++ b
+		(_, Left b) -> Left b
+		(Left a, _) -> Left a
+		(Right a, Right b) -> Right $ if a > b then 1 else 0
+	eval f (Eq expA expB) = case (eval f expA, eval f expB) of
+		(Left a, Left b) -> Left $ a ++ ", " ++ b
+		(_, Left b) -> Left b
+		(Left a, _) -> Left a
+		(Right a, Right b) -> Right $ if a == b then 1 else 0
+	eval f (OR expA expB) = case (eval f expA, eval f expB) of
+		(Left a, Left b) -> Left $ a ++ ", " ++ b
+		(_, Left b) -> Left b
+		(Left a, _) -> Left a
+		(Right a, Right b) -> Right $ if a == 1 || b == 1 then 1 else 0
+	eval f (AND expA expB) = case (eval f expA, eval f expB) of
+		(Left a, Left b) -> Left $ a ++ ", " ++ b
+		(_, Left b) -> Left b
+		(Left a, _) -> Left a
+		(Right a, Right b) -> Right $ if a==1 && b==1 then 1 else 0
+	eval f (NOT expr) = case (eval f expr) of
+		(Left a) -> Left a
+		(Right b) -> Right $ if b == 1 then 0 else 1
+
+
 
 indenta ::  Show a => Int -> Command a -> String
 indenta x (Assign s expr) = (espais x) ++ s ++ " := " ++ (show expr) ++ "\n"
