@@ -29,7 +29,7 @@ data Command a = Assign Ident (NExpr a)
 
 data SymTable a = Variable Ident a (SymTable a) (SymTable a)
 				| Pila Ident [a] (SymTable a) (SymTable a)
-				| TaulaBuida
+				| TaulaBuida deriving (Show)
 
 class Evaluable e where
 	eval :: (Num a, Ord a) => (Ident -> Maybe a) -> (e a) -> (Either String a)
@@ -44,6 +44,7 @@ getValue (Variable s x left right) k
 getValue (Pila s l left right) k
   | k < s = getValue left k
   | k > s = getValue right k
+  | null l = Nothing
   | otherwise = (Just (head l))
 
 getType :: SymTable a -> Ident -> String
@@ -60,7 +61,7 @@ getType (Pila s l left right) k
 instance Evaluable NExpr where
 	eval f (Const x) = Right x
 	eval f (Var x)
-	  | f x == Nothing = Left "error"
+	  | f x == Nothing = Left "undefined variable"
 	  | otherwise = Right (fromJust(f x))
 	eval f (Plus expA expB)= case (eval f expA, eval f expB) of
 		(Left a, Left b) -> Left $ a ++ ", " ++ b
@@ -103,6 +104,37 @@ instance Evaluable BExpr where
 		(Left a) -> Left a
 		(Right b) -> Right $ if b == 1 then 0 else 1
 
+asign :: (Num a, Ord a) => SymTable a -> Ident -> NExpr a -> ((Either String [a]),SymTable a, [a])
+
+throwErr :: (Num a, Ord a) => String ->  SymTable a -> [a] -> ((Either String [a]),SymTable a, [a])
+throwErr err t i = ((Left err),t,i)
+
+printExpr :: (Num a, Ord a) => SymTable a -> NExpr a -> ((Either String [a]),SymTable a, [a])
+
+empty :: (Num a, Ord a) => SymTable a -> Ident a -> ((Either String [a]),SymTable a, [a])
+
+push :: (Num a, Ord a) => SymTable a -> Ident -> NExpr a -> ((Either String [a]),SymTable a, [a])
+
+pop :: (Num a, Ord a) => SymTable a -> Ident -> Ident -> ((Either String [a]),SymTable a, [a])
+
+size :: (Num a, Ord a) => SymTable a -> Ident -> Ident -> ((Either String [a]),SymTable a, [a])
+
+interpretCommand :: (Num a, Ord a) => SymTable a -> [a] -> Command a -> ((Either String [a]),SymTable a, [a])
+interpretCommand t i (Asssign s expr) = asign t s expr
+interpretCommand t i (Input s)
+  | null i = throwErr "empty input" t i
+  | otherwise = asign t s (Const (head i))
+interpretCommand t i (Print expr) = printExpr t expr
+interpretCommand t i (Empty s) = empty t s
+interpretCommand t i (Push s expr) = push t s expr
+interpretCommand t i (Pop s var) = pop t s var
+interpretCommand t i (Size s var) = size t s var
+interpretCommand t i (Seq l) = foldl (\acc com -> interpretCommand (table acc) (input acc) com) ((Right []),t,i) l
+interpretCommand t i (Cond expr thencom elsecom) = case (eval (getValue t) expr) of
+													1 -> interpretCommand t i thencom
+													0 -> interpretCommand t i elsecom
+interpretCommand t i (Loop expr com) = case (eval (getValue t) expr) of
+													1 -> interpretCommand (table (interpretCommand t i com)) (input (interpretCommand t i com)) (Loop expr com)
 
 
 indenta ::  Show a => Int -> Command a -> String
@@ -117,12 +149,8 @@ indenta x (Seq l) = (foldr (\com acc -> (indenta x com) ++ acc) "" l)
 indenta x (Cond expr coma comb) = (espais x) ++ "IF " ++ (show expr) ++ " THEN\n" ++ (indenta (x+2) coma) ++ (espais x) ++ "ELSE\n" ++ (indenta (x+2) comb) ++ (espais x) ++ "END\n"
 indenta x (Loop expr com) = (espais x) ++ "WHILE " ++ (show expr) ++ "\n" ++ (espais x) ++ "DO\n" ++ (indenta (x+2) com) ++ (espais x) ++ "END\n"
 
-instance Show a => Show(NExpr a) where
-    show (Var x) = x
-    show (Const x) = show x
-    show (Plus x y) = (show x) ++ " + " ++ (show y)
-    show (Minus x y) = (show x) ++ " - " ++ (show y)
-    show (Times x y) = (show x) ++ " * " ++ (show y)
+instance Show a => Show(Command a) where
+    show = indenta 0
 
 instance Show a => Show(BExpr a) where
     show (AND x y) = (show x) ++ " AND " ++ (show y)
@@ -131,11 +159,23 @@ instance Show a => Show(BExpr a) where
     show (Gt x y) = (show x) ++ " > " ++ (show y)
     show (Eq x y) = (show x) ++ " = " ++ (show y)
 
+instance Show a => Show(NExpr a) where
+    show (Var x) = x
+    show (Const x) = show x
+    show (Plus x y) = (show x) ++ " + " ++ (show y)
+    show (Minus x y) = (show x) ++ " - " ++ (show y)
+    show (Times x y) = (show x) ++ " * " ++ (show y)
+
 espais :: Int -> String
 espais x
-	| x <= 0 = ""
-	| otherwise = " " ++ (espais (x-1))
+  | x <= 0 = ""
+  | otherwise = " " ++ (espais (x-1))
 
+output :: (a,b,c) -> a
+output (x,_,_) = a
 
-instance Show a => Show(Command a) where
-    show = indenta 0
+table :: (a,b,c) -> b
+table (_,x,_) = x
+
+input :: (a,b,c) -> c
+input (_,_,x) = x
