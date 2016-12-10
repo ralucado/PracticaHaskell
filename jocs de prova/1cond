@@ -1,0 +1,14 @@
+INPUT X
+INPUT Y
+IF X > Y THEN
+  IF X > 10 THEN
+    Z := 2
+  ELSE
+    Z := 1
+  END
+ELSE
+  Z := 0
+END
+PRINT X
+PRINT Y
+PRINT Z

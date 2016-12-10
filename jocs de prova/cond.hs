@@ -1,0 +1,1 @@
+ Seq [ Input "X" ,  Input "Y" ,  Cond ( Gt ( Var "X" ) ( Var "Y" ) ) ( Seq [ Cond ( Gt ( Var "X" ) ( Const 10 ) ) ( Seq [ Assign "Z" ( Const 2 ) ] ) ( Seq [ Assign "Z" ( Const 1 ) ] ) ] ) ( Seq [ Assign "Z" ( Const 0 ) ] ) ,  Print (Var "X" ) ,  Print (Var "Y" ) ,  Print (Var "Z" ) ]

@@ -1,5 +1,8 @@
 import Data.Maybe
 import Data.Either
+import System.IO
+import System.Random
+
 type Ident = String
 data NExpr a = Var Ident
 	   | Const a 
@@ -33,7 +36,7 @@ data SymTable a = Variable Ident a (SymTable a) (SymTable a)
 
 class Evaluable e where
 	eval :: (Num a, Ord a) => (Ident -> Maybe a) -> (e a) -> (Either String a)
-	typeCheck :: (Ident -> String) -> (e a) -> Bool
+	--typeCheck :: (Ident -> String) -> (e a) -> Bool
 
 getValue :: SymTable a -> Ident -> (Maybe a)
 getValue TaulaBuida k = Nothing
@@ -84,7 +87,7 @@ instance Evaluable BExpr where
 		(Left a, Left b) -> Left $ a ++ ", " ++ b
 		(_, Left b) -> Left b
 		(Left a, _) -> Left a
-		(Right a, Right b) -> Right $ if a > b then 1 else 0
+		(Right a, Right b) -> Right (if a > b then 1 else 0)
 	eval f (Eq expA expB) = case (eval f expA, eval f expB) of
 		(Left a, Left b) -> Left $ a ++ ", " ++ b
 		(_, Left b) -> Left b
@@ -104,38 +107,100 @@ instance Evaluable BExpr where
 		(Left a) -> Left a
 		(Right b) -> Right $ if b == 1 then 0 else 1
 
-asign :: (Num a, Ord a) => SymTable a -> Ident -> NExpr a -> ((Either String [a]),SymTable a, [a])
+putVar :: (Num a, Ord a) => SymTable a -> Ident -> a -> SymTable a
+putVar TaulaBuida s x = Variable s x TaulaBuida TaulaBuida
+putVar (Variable ident valor l r) s x
+  | s < ident = (Variable ident valor (putVar l s x) r)
+  | s > ident = (Variable ident valor l (putVar r s x))
+  | otherwise = (Variable ident x l r)
+putVar (Pila ident valor l r) s x
+  | s < ident = (Pila ident valor (putVar l s x) r)
+  | s > ident = (Pila ident valor l (putVar r s x))
+  | otherwise = (Variable ident x l r)
+
+putStack :: (Num a, Ord a) => SymTable a -> Ident -> [a] -> SymTable a
+putStack TaulaBuida s x = Pila s x TaulaBuida TaulaBuida
+putStack (Variable ident valor l r) s x
+  | s < ident = (Variable ident valor (putStack l s x) r)
+  | s > ident = (Variable ident valor l (putStack r s x))
+  | otherwise = (Pila ident x l r)
+putStack (Pila ident valor l r) s x
+  | s < ident = (Pila ident valor (putStack l s x) r)
+  | s > ident = (Pila ident valor l (putStack r s x))
+  | otherwise = (Pila ident x l r)
+
+getStack :: SymTable a -> Ident -> (Maybe [a])
+getStack TaulaBuida k = Nothing
+getStack (Variable s x left right) k = Nothing
+getStack (Pila s l left right) k
+  | k < s = getStack left k
+  | k > s = getStack right k
+  | otherwise = Just l
+
+
+asign :: (Num a, Ord a) => SymTable a -> Ident -> NExpr a -> [a] -> ((Either String [a]),SymTable a, [a])
+asign t s expr input = case eval (getValue t) expr of 
+							Left err -> (Left err, t, input)
+							Right x -> (Right [], putVar t s x, input)
 
 throwErr :: (Num a, Ord a) => String ->  SymTable a -> [a] -> ((Either String [a]),SymTable a, [a])
 throwErr err t i = ((Left err),t,i)
 
-printExpr :: (Num a, Ord a) => SymTable a -> NExpr a -> ((Either String [a]),SymTable a, [a])
+printExpr :: (Num a, Ord a) => SymTable a -> NExpr a -> [a] ->  ((Either String [a]),SymTable a, [a])
+printExpr t expr input = case eval (getValue t) expr of 
+														Left err -> (Left err, t, input)
+														Right x -> (Right (x:[]), t, input)
 
-empty :: (Num a, Ord a) => SymTable a -> Ident a -> ((Either String [a]),SymTable a, [a])
+empty :: (Num a, Ord a) => SymTable a -> Ident -> [a] -> ((Either String [a]),SymTable a, [a])
+empty t s input = (Right [], putStack t s [], input)
 
-push :: (Num a, Ord a) => SymTable a -> Ident -> NExpr a -> ((Either String [a]),SymTable a, [a])
+push :: (Num a, Ord a) => SymTable a -> Ident -> NExpr a -> [a] -> ((Either String [a]),SymTable a, [a])
+push t s expr input = case eval (getValue t) expr of 
+													 Left err -> (Left err, t, input)
+													 Right x -> (Right [], putStack t s (x:cosa), input) where Just cosa = getStack t s
 
-pop :: (Num a, Ord a) => SymTable a -> Ident -> Ident -> ((Either String [a]),SymTable a, [a])
+pop :: (Num a, Ord a) => SymTable a -> Ident -> Ident -> [a] -> ((Either String [a]),SymTable a, [a])
+pop t s dest input
+	| getType t s == "Pila" && getValue t s == Nothing = (Left "empty stack", t, input)
+	| getType t s == "Pila" 						   = (Right [], putStack (putVar t dest cosa) s (tail cosa2), input)
+	| getType t s == "" = (Left "undefined variable", t, input)
+	| otherwise = (Left "type error", t, input)
+	where Just cosa = getValue t s
+	      Just cosa2 = getStack t s
 
-size :: (Num a, Ord a) => SymTable a -> Ident -> Ident -> ((Either String [a]),SymTable a, [a])
+size :: (Num a, Ord a) => SymTable a -> Ident -> Ident -> [a] -> ((Either String [a]),SymTable a, [a])
+size t s d input
+  | getType t s == "Pila" = case getStack t s of Just x -> (Right [], putVar t d (fromIntegral(length x)), input)
+  | getType t s == "" = (Left "undefined variable", t, input)
+  | otherwise = (Left "type error", t, input)
+
+
+interpretAccumulator :: (Num a, Ord a) =>  ((Either String [a]),SymTable a, [a]) -> Command a -> ((Either String [a]),SymTable a, [a])
+interpretAccumulator (Left err, t, i) _ = (Left err, t, i)
+interpretAccumulator acc com = case interpretCommand (table acc) (input acc) com of 
+																					(Left err, _, _) -> (Left err, table acc, input acc)
+																					(Right l, t, i ) -> (Right (outacc++l), t, i)
+																					where Right outacc = output acc
+
 
 interpretCommand :: (Num a, Ord a) => SymTable a -> [a] -> Command a -> ((Either String [a]),SymTable a, [a])
-interpretCommand t i (Asssign s expr) = asign t s expr
-interpretCommand t i (Input s)
-  | null i = throwErr "empty input" t i
-  | otherwise = asign t s (Const (head i))
-interpretCommand t i (Print expr) = printExpr t expr
-interpretCommand t i (Empty s) = empty t s
-interpretCommand t i (Push s expr) = push t s expr
-interpretCommand t i (Pop s var) = pop t s var
-interpretCommand t i (Size s var) = size t s var
-interpretCommand t i (Seq l) = foldl (\acc com -> interpretCommand (table acc) (input acc) com) ((Right []),t,i) l
-interpretCommand t i (Cond expr thencom elsecom) = case (eval (getValue t) expr) of
-													1 -> interpretCommand t i thencom
-													0 -> interpretCommand t i elsecom
+interpretCommand t i (Assign s expr) = asign t s expr i
+interpretCommand t i (Input s) = asign t s (Const (head i)) (tail i)
+interpretCommand t i (Print expr) = printExpr t expr i
+interpretCommand t i (Empty s) = empty t s i
+interpretCommand t i (Push s expr) = push t s expr i
+interpretCommand t i (Pop s var) = pop t s var i
+interpretCommand t i (Size s var) = size t s var i
+interpretCommand t i (Seq l) = foldl (interpretAccumulator) ((Right []),t,i) l
+interpretCommand t i (Cond expr thencom elsecom) = case eval (getValue t) expr of
+													Right 1 -> interpretCommand t i thencom
+													Right 0 -> interpretCommand t i elsecom
 interpretCommand t i (Loop expr com) = case (eval (getValue t) expr) of
-													1 -> interpretCommand (table (interpretCommand t i com)) (input (interpretCommand t i com)) (Loop expr com)
+													Right 1 -> interpretCommand (table (interpretCommand t i com)) (input (interpretCommand t i com)) (Loop expr com)
 
+
+interpretProgram:: (Num a, Ord a) => [a] -> Command a -> (Either String [a])
+interpretProgram input com = output (interpretCommand TaulaBuida input com)
 
 indenta ::  Show a => Int -> Command a -> String
 indenta x (Assign s expr) = (espais x) ++ s ++ " := " ++ (show expr) ++ "\n"
@@ -172,10 +237,38 @@ espais x
   | otherwise = " " ++ (espais (x-1))
 
 output :: (a,b,c) -> a
-output (x,_,_) = a
+output (x,_,_) = x
 
 table :: (a,b,c) -> b
 table (_,x,_) = x
 
 input :: (a,b,c) -> c
 input (_,_,x) = x
+
+import Control.Monad.Loops (unfoldM)
+
+readInts :: IO [Int]
+readInts = unfoldM $ fmap (check . read) getLine
+  where check x = if x == 0 then Nothing else Just x
+
+readDubs :: IO [Double]
+readDubs = unfoldM $ fmap (check . read) getLine
+  where check x = if x == 0 then Nothing else Just x
+
+main = do
+	tipus <- getLine
+	opcio <- getLine
+	handle <- openFile "programhs.txt" ReadMode
+	program <- hGetContents handle  
+	if tipus == 0 then
+		g <- newStdGen
+		
+		let llistaRand = randoms g
+
+	else if tipus == 1 then
+		else
+			
+	case interpretProgram input program of
+	Left s -> putStrLn s
+	Right x -> putStrLn $ show x
+    hClose handle
