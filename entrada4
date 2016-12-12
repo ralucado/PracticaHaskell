@@ -1,0 +1,16 @@
+INPUT X
+INPUT Y
+IF Y > 0 THEN
+  Z := 1
+ELSE
+  Z := 0
+END
+IF NOT 0 > X THEN
+  W := 1
+ELSE
+  W := 0
+END
+PRINT X
+PRINT Y
+PRINT Z
+PRINT W
